@@ -103,9 +103,10 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
+                    print("Adding activity for ", device)
                     if 'activity' not in device:
                         device['activity'] = [ActiveTimeRange(time.time())]
-                        print("Adding activity for ", device)
+                        print("Added activity for ", device)
                         # todo: add dropoff
                     current_network.add_device(device)
                     devices |= {device_mac}
