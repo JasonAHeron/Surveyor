@@ -33,6 +33,7 @@ class Network(object):
         # don't write when there are no devices
         if self.changes and len(self.network['devices']) > 0:
             self.network_doc.set(self.network)
+        self.changes = False
 
     def add_device(self, device):
         # todo: track join and drop timestamps
@@ -45,10 +46,12 @@ class Network(object):
 
     def print_network(self):
         if len(self.network['devices']) > 0:
-            print('Network SSID: {}'.format(self.ssid))
+            # call print before write
+            print('Network SSID: {}\nWriting Changes: {}'.format(self.ssid, self.changes))
             for mac, device in self.network['devices'].items():
                 print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
-                    mac, device['vendor'], time.time() - device['last_seen']))
+                    mac, device['vendor'], (time.time() - device['last_seen']) // 1))
+            print
 
 
 def ssid_is_dirty(ssid):
@@ -87,8 +90,8 @@ def parse_wifi_map(map_path, networks):
                     current_network.add_device(device)
                     devices |= {device_mac}
 
-        current_network.write()
         current_network.print_network()
+        current_network.write()
         networks[ssid] = current_network
 
     print('\n\nSSID count: {}, Device count: {}'.format(
