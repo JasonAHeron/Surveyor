@@ -52,7 +52,7 @@ class Network(object):
                 print('\tDevice: {}, Vendor: {}'.format(mac, device['vendor']))
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
-                        device['activity'][-1].start // 1, (time.time() - device['last_seen']) // 1))
+                        device['activity'][-1][0] // 1, (time.time() - device['last_seen']) // 1))
             print()
 
 
