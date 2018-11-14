@@ -105,7 +105,7 @@ class Network(object):
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
                         datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
-                        int((time.time() - device['last_seen']) // 1)))
+                        int((time.time() - device['last_seen']))))
                 if 'history' in device:
                     print('\t\tHistory: {}'.format(
                         list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
@@ -147,8 +147,9 @@ def parse_wifi_map(map_path, networks):
                         continue
                     device['mac'] = device_mac
                     if device_mac in current_network.network['devices'] \
-                            and 'activity' not in current_network.network['devices'][device_mac]:
-                        device['activity'] = [min(now, device['last_seen']), -1]
+                            and 'activity' not in current_network.network['devices'][device_mac] \
+                            and now - device['last_seen'] < 600:
+                        device['activity'] = [device['last_seen'], -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
 
