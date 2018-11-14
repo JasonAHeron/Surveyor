@@ -1,0 +1,6 @@
+<mat-progress-bar *ngIf="!(networks | async)"></mat-progress-bar>
+<app-network-card *ngFor="let network of networks | async"
+  [ssid]="network.ssid"
+  [channel]="network.channel"
+  [documentId]="network.id">
+</app-network-card>
