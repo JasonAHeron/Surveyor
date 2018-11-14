@@ -38,7 +38,7 @@ class Network(object):
 
     def add_device(self, device):
         # todo: track join and drop timestamps
-        if not self.network['devices'][device['mac']]:
+        if device['mac'] not in self.network['devices']:
             # only write when necessary
             self.changes = True
             print('adding device', device)
