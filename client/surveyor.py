@@ -30,10 +30,9 @@ class Network(object):
             self.network['ssid'] = self.ssid
 
     def write(self):
+        # don't write when there are no devices
         if self.changes and len(self.network['devices']) > 0:
             self.network_doc.set(self.network)
-        else:
-            print('not writing ', self.ssid)
 
     def add_device(self, device):
         # todo: track join and drop timestamps
