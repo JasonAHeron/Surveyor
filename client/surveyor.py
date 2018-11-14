@@ -10,6 +10,20 @@ import time
 import yaml
 
 
+class ActiveTimeRange(object):
+
+    def __init__(self, start):
+        self.start = start
+        self.stop = -1
+        self.next_activity = None
+
+    def stop_activity(self, stop):
+        self.stop = stop
+
+    def link_next_activity(self, next_range):
+        self.next_activity(next_range)
+
+
 class Network(object):
     changes = False
 
@@ -49,8 +63,9 @@ class Network(object):
             # call print before write
             print('Network SSID: {}\nWriting Changes: {}'.format(self.ssid, self.changes))
             for mac, device in self.network['devices'].items():
-                print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
-                    mac, device['vendor'], (time.time() - device['last_seen']) // 1))
+                print('\tDevice: {}, Vendor: {}'.format(mac, device['vendor']))
+                print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
+                    device['activity'][-1].start // 1, (time.time() - device['last_seen']) // 1))
             print()
 
 
@@ -87,6 +102,9 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
+                    if 'activity' not in device:
+                        device['activity'] = [ActiveTimeRange(time.time())]
+                        # todo: add dropoff
                     current_network.add_device(device)
                     devices |= {device_mac}
 
