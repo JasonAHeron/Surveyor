@@ -11,6 +11,18 @@ import time
 import yaml
 
 
+def flatten_dict(d):
+    def expand(key, value):
+        if isinstance(value, dict):
+            return [(key + '.' + k, v) for k, v in flatten_dict(value).items()]
+        else:
+            return [(key, value)]
+
+    items = [item for k, v in d.items() for item in expand(k, v)]
+
+    return dict(items)
+
+
 class Network(object):
     changes = False
 
@@ -33,7 +45,7 @@ class Network(object):
     def write(self):
         # don't write when there are no devices
         if self.changes and len(self.network['devices']) > 0:
-            self.network_doc.set(self.network)
+            self.network_doc.update(flatten_dict(self.network))
         self.changes = False
 
     def add_device(self, device):
@@ -67,7 +79,7 @@ class Network(object):
                     if 'history' not in device:
                         device['history'] = []
                     device['history'] += device['activity']
-                    del(device['activity'])
+                    del (device['activity'])
 
                     # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
@@ -76,7 +88,7 @@ class Network(object):
                     remove.append(mac)
 
         for mac in remove:
-            del(self.network['devices'][mac])
+            del (self.network['devices'][mac])
 
     def print_network(self):
         if len(self.network['devices']) > 0:
@@ -89,7 +101,8 @@ class Network(object):
                         datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
                         int((time.time() - device['last_seen']) // 1)))
                 if 'history' in device:
-                    print('\t\tHistory: {}'.format(list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
+                    print('\t\tHistory: {}'.format(
+                        list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
             print()
 
 
