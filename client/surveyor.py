@@ -48,7 +48,7 @@ class Network(object):
         now = time.time()
         remove = []
         for mac, device in self.network['devices'].items():
-            if device['last_seen'] > 600:  # 10 mins
+            if now - device['last_seen'] > 600:  # 10 mins
                 if 'activity' in device and device['activity'][1] == -1:
                     device['activity'][1] = now
 
