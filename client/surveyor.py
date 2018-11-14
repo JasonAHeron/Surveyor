@@ -21,8 +21,8 @@ class Network(object):
 
         if self.network.exists:
             self.network = self.network.to_dict()
-            self.devices = self.network.get('devices')
-            print(self.devices)
+            if not self.network.get('devices'):
+                self.network['devices'] = dict()
         else:
             self.changes = True
             self.network = dict()
@@ -31,7 +31,7 @@ class Network(object):
 
     def write(self):
         if self.changes:
-            print('writing network', self.network)
+            print('writing network: ', self.network)
             self.network_doc.set(self.network)
         else:
             print('no changes, not writing')
