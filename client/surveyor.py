@@ -46,6 +46,7 @@ class Network(object):
 
     def track_devices(self):
         now = time.time()
+        remove = []
         for mac, device in self.network['devices'].items():
             if device['last_seen'] > 600:  # 10 mins
                 if 'activity' in device and device['activity'][1] == -1:
@@ -61,8 +62,10 @@ class Network(object):
                     device['activity'] = None
                 else:
                     # if no activity tracking, just drop
-                    del(self.network['devices'][mac])
+                    remove.append(mac)
 
+        for mac in remove:
+            del(self.network['devices'][mac])
 
     def print_network(self):
         if len(self.network['devices']) > 0:
