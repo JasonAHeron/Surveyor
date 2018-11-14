@@ -1,3 +1,4 @@
+from datetime import datetime
 from firebase_admin import credentials
 from firebase_admin import firestore
 from watchdog.events import FileSystemEventHandler
@@ -30,17 +31,66 @@ class Network(object):
             self.network['ssid'] = self.ssid
 
     def write(self):
-        if self.changes:
-            print('writing network: ', self.network)
+        # don't write when there are no devices
+        if self.changes and len(self.network['devices']) > 0:
             self.network_doc.set(self.network)
-        else:
-            print('no changes, not writing')
+        self.changes = False
 
     def add_device(self, device):
-        self.changes = True
-        print('adding device', device)
-        self.network['devices'][device['mac']] = device
+        # todo: track join and drop timestamps
+        if device['mac'] not in self.network['devices']:
+            # only write when necessary
+            self.changes = True
+
+        if device['mac'] in self.network['devices']:
+            self.network['devices'][device['mac']]['mac'] = device['mac']
+            self.network['devices'][device['mac']]['vendor'] = device['vendor']
+            self.network['devices'][device['mac']]['last_seen'] = device['last_seen']
+            if 'activity' not in self.network['devices'][device['mac']]:
+                self.changes = True
+                self.network['devices'][device['mac']]['activity'] = device['activity']
+        else:
+            self.network['devices'][device['mac']] = device
+
         self.network['device_count'] = len(self.network['devices'])
+
+    def track_devices(self):
+        now = time.time()
+        remove = []
+        for mac, device in self.network['devices'].items():
+            if now - device['last_seen'] > 600:  # 10 mins
+                if 'activity' in device and device['activity'][1] == -1:
+                    self.changes = True
+                    device['activity'][1] = now
+
+                    # history format is [join, leave, join, leave, ...] janky due to lack of schema options
+                    if 'history' not in device:
+                        device['history'] = []
+                    device['history'] += device['activity']
+                    del(device['activity'])
+
+                    # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
+                    device['history'] = device['history'][-10:]
+                elif 'history' not in device:
+                    # if no activity tracking or history, just drop
+                    remove.append(mac)
+
+        for mac in remove:
+            del(self.network['devices'][mac])
+
+    def print_network(self):
+        if len(self.network['devices']) > 0:
+            # call print before write
+            print('Network SSID: {}\nWriting Changes: {}'.format(self.ssid, self.changes))
+            for mac, device in self.network['devices'].items():
+                print('\tDevice: {}, Vendor: {}'.format(mac, device['vendor']))
+                if 'activity' in device:
+                    print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
+                        datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
+                        int((time.time() - device['last_seen']) // 1)))
+                if 'history' in device:
+                    print('\t\tHistory: {}'.format(list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
+            print()
 
 
 def ssid_is_dirty(ssid):
@@ -58,11 +108,10 @@ def parse_wifi_map(map_path, networks):
         return
 
     os.system('clear')
-    print('*' * 40)
     for ssid in wifi_map:
         if ssid_is_dirty(ssid):
             continue
-        print('Clean SSID Found = {}'.format(ssid))
+
         ssid_node = wifi_map[ssid]
 
         if ssid not in networks:
@@ -73,15 +122,19 @@ def parse_wifi_map(map_path, networks):
         for bssid in ssid_node:
             bssid_node = ssid_node[bssid]
             if 'devices' in bssid_node:
+                now = time.time()
                 for device_mac, device in bssid_node['devices'].items():
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
+                    if device_mac in current_network.network['devices'] \
+                            and 'activity' not in current_network.network['devices'][device_mac]:
+                        device['activity'] = [min(now, device['last_seen']), -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
-                    print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
-                        device_mac, device['vendor'], time.time() - device['last_seen']))
 
+        current_network.track_devices()
+        current_network.print_network()
         current_network.write()
         networks[ssid] = current_network
 
