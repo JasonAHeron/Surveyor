@@ -25,6 +25,7 @@ def flatten_dict(d):
 
 class Network(object):
     changes = False
+    new_network = False
 
     def __init__(self, ssid, firestore_connection):
         self.ssid = ssid
@@ -38,6 +39,7 @@ class Network(object):
                 self.network['devices'] = dict()
         else:
             self.changes = True
+            self.new_network = True
             self.network = dict()
             self.network['devices'] = dict()
             self.network['ssid'] = self.ssid
@@ -45,7 +47,11 @@ class Network(object):
     def write(self):
         # don't write when there are no devices
         if self.changes and len(self.network['devices']) > 0:
-            self.network_doc.update(flatten_dict(self.network))
+            if self.new_network:
+                self.network_doc.set(self.network)
+                self.new_network = False
+            else:
+                self.network_doc.update(flatten_dict(self.network))
         self.changes = False
 
     def add_device(self, device):
