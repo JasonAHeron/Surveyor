@@ -42,7 +42,11 @@ class Network(object):
             # only write when necessary
             self.changes = True
 
-        self.network['devices'][device['mac']] = device
+        self.network['devices'][device['mac']]['mac'] = device['mac']
+        self.network['devices'][device['mac']]['vendor'] = device['vendor']
+        self.network['devices'][device['mac']]['last_seen'] = device['last_seen']
+        if 'activity' not in self.network['devices'][device['mac']]:
+            self.network['devices'][device['mac']]['activity'] = device['activity']
         self.network['device_count'] = len(self.network['devices'])
 
     def track_devices(self):
@@ -57,10 +61,10 @@ class Network(object):
                     if 'history' not in device:
                         device['history'] = []
                     device['history'] += device['activity']
+                    del(device['activity'])
+
                     # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
-
-                    del(device['activity'])
                 else:
                     # if no activity tracking, just drop
                     remove.append(mac)
@@ -117,7 +121,8 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
-                    if 'activity' not in device:
+                    if device_mac in current_network['devices'] \
+                            and 'activity' not in current_network['devices'][device_mac]:
                         device['activity'] = [min(now, device['last_seen']), -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
