@@ -59,7 +59,7 @@ class Network(object):
                     # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
 
-                    device['activity'] = None
+                    del(device['activity'])
                 else:
                     # if no activity tracking, just drop
                     remove.append(mac)
@@ -115,7 +115,7 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
-                    if 'activity' not in device or device['activity'] is None:
+                    if 'activity' not in device:
                         device['activity'] = [now, -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
