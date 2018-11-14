@@ -52,7 +52,7 @@ class Network(object):
                 print('\tDevice: {}, Vendor: {}'.format(mac, device['vendor']))
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
-                        device['activity'][-1][0] // 1, (time.time() - device['last_seen']) // 1))
+                        device['activity'][0] // 1, (time.time() - device['last_seen']) // 1))
             print()
 
 
@@ -92,7 +92,7 @@ def parse_wifi_map(map_path, networks):
                     device['mac'] = device_mac
                     print("Adding activity for ", device)
                     if 'activity' not in device:
-                        device['activity'] = {now: None}
+                        device['activity'] = [now, -1]
                         print("Added activity for ", device)
                         # todo: add dropoff
                     current_network.add_device(device)
