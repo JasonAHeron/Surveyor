@@ -44,6 +44,26 @@ class Network(object):
         self.network['devices'][device['mac']] = device
         self.network['device_count'] = len(self.network['devices'])
 
+    def track_devices(self):
+        now = time.time()
+        for mac, device in self.network['devices'].items():
+            if device['last_seen'] > 600:  # 10 mins
+                if 'activity' in device and device['activity'][1] == -1:
+                    device['activity'][1] = now
+
+                    # history format is [join, leave, join, leave, ...] janky due to lack of schema options
+                    if 'history' not in device:
+                        device['history'] = []
+                    device['history'] += device['activity']
+                    # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
+                    device['history'] = device['history'][-10:]
+
+                    device['activity'] = None
+                else:
+                    # if no activity tracking, just drop
+                    del(self.network['devices'][mac])
+
+
     def print_network(self):
         if len(self.network['devices']) > 0:
             # call print before write
@@ -53,6 +73,8 @@ class Network(object):
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
                         device['activity'][0] // 1, (time.time() - device['last_seen']) // 1))
+                if 'history' in device:
+                    print('\t\tHistory: {}'.format(device['history']))
             print()
 
 
@@ -92,10 +114,12 @@ def parse_wifi_map(map_path, networks):
                     device['mac'] = device_mac
                     if 'activity' not in device:
                         device['activity'] = [now, -1]
+                    elif device['last_seen'] > 600:  # 10 mins
                         # todo: add dropoff
                     current_network.add_device(device)
                     devices |= {device_mac}
 
+        current_network.track_devices()
         current_network.print_network()
         current_network.write()
         networks[ssid] = current_network
