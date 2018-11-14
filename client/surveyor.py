@@ -47,9 +47,9 @@ class Network(object):
     def print_network(self):
         if len(self.network['devices']) > 0:
             print('Network SSID: {}'.format(self.ssid))
-            for device in self.network['devices']:
+            for mac, device in self.network['devices'].items():
                 print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
-                    device['mac'], device['vendor'], time.time() - device['last_seen']))
+                    mac, device['vendor'], time.time() - device['last_seen']))
 
 
 def ssid_is_dirty(ssid):
