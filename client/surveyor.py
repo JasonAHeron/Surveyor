@@ -15,13 +15,9 @@ class ActiveTimeRange(object):
     def __init__(self, start):
         self.start = start
         self.stop = -1
-        self.next_activity = None
 
     def stop_activity(self, stop):
         self.stop = stop
-
-    def link_next_activity(self, next_range):
-        self.next_activity(next_range)
 
 
 class Network(object):
