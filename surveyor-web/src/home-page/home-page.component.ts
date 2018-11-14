@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AngularFirestore } from 'angularfire2/firestore';
 import { Network } from '../models/network';
 import { Observable } from 'rxjs';
-import { shareReplay, map } from 'rxjs/operators';
+import { shareReplay, map, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-home',
@@ -10,6 +10,7 @@ import { shareReplay, map } from 'rxjs/operators';
 })
 export class HomePageComponent implements OnInit {
   networks: Observable<Network[]> | undefined;
+  values = Object.values;
 
   constructor(
     private readonly afFirestore: AngularFirestore,
@@ -18,11 +19,8 @@ export class HomePageComponent implements OnInit {
   ngOnInit() {
     this.networks = this.afFirestore.collection<Network>('networks')
       .snapshotChanges().pipe(
-        map(actions => actions.map(a => {
-          const data = a.payload.doc.data() as Network;
-          const id = a.payload.doc.id;
-          return { id, ...data };
-        })),
+        map(actions => actions.map(a => a.payload.doc.data()).filter(network => Object.values(network.devices).length !== 0)),
+        tap(payload => console.log(payload)),
         shareReplay(1));
   }
 }
