@@ -88,7 +88,7 @@ class Network(object):
                         datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
                         int((time.time() - device['last_seen']) // 1)))
                 if 'history' in device:
-                    print('\t\tHistory: {}'.format(device['history']))
+                    print('\t\tHistory: {}'.format(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history'])))
             print()
 
 
