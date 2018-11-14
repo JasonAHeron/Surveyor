@@ -10,16 +10,6 @@ import time
 import yaml
 
 
-class ActiveTimeRange(object):
-
-    def __init__(self, start):
-        self.start = start
-        self.stop = -1
-
-    def stop_activity(self, stop):
-        self.stop = stop
-
-
 class Network(object):
     changes = False
 
@@ -101,7 +91,7 @@ def parse_wifi_map(map_path, networks):
                     device['mac'] = device_mac
                     print("Adding activity for ", device)
                     if 'activity' not in device:
-                        device['activity'] = [ActiveTimeRange(time.time())]
+                        device['activity'] = [(time.time(), -1)]
                         print("Added activity for ", device)
                         # todo: add dropoff
                     current_network.add_device(device)
