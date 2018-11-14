@@ -26,6 +26,7 @@ class Network(object):
         else:
             self.changes = True
             self.network = dict()
+            self.network['devices'] = dict()
             self.network['ssid'] = self.ssid
 
     def write(self):
