@@ -121,8 +121,8 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
-                    if device_mac in current_network['devices'] \
-                            and 'activity' not in current_network['devices'][device_mac]:
+                    if device_mac in current_network.network['devices'] \
+                            and 'activity' not in current_network.network['devices'][device_mac]:
                         device['activity'] = [min(now, device['last_seen']), -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
