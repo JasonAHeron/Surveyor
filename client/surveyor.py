@@ -42,11 +42,15 @@ class Network(object):
             # only write when necessary
             self.changes = True
 
-        self.network['devices'][device['mac']]['mac'] = device['mac']
-        self.network['devices'][device['mac']]['vendor'] = device['vendor']
-        self.network['devices'][device['mac']]['last_seen'] = device['last_seen']
-        if 'activity' not in self.network['devices'][device['mac']]:
-            self.network['devices'][device['mac']]['activity'] = device['activity']
+        if device['mac'] in self.network['devices']:
+            self.network['devices'][device['mac']]['mac'] = device['mac']
+            self.network['devices'][device['mac']]['vendor'] = device['vendor']
+            self.network['devices'][device['mac']]['last_seen'] = device['last_seen']
+            if 'activity' not in self.network['devices'][device['mac']]:
+                self.network['devices'][device['mac']]['activity'] = device['activity']
+        else:
+            self.network['devices'][device['mac']] = device
+
         self.network['device_count'] = len(self.network['devices'])
 
     def track_devices(self):
