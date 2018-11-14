@@ -10,10 +10,43 @@ import time
 import yaml
 
 
+class Network(object):
+    changes = False
+
+    def __init__(self, ssid, firestore_connection):
+        self.ssid = ssid
+        self.firestore_connection = firestore_connection
+        self.network_doc = firestore_connection.collection('networks').document(ssid)
+        self.network = self.network_doc.get()
+
+        if self.network.exists:
+            self.network = self.network.to_dict()
+            self.devices = self.network.get('devices')
+            print(self.devices)
+        else:
+            self.changes = True
+            self.network = dict()
+            self.network['ssid'] = self.ssid
+
+    def write(self):
+        if self.changes:
+            print('writing network', self.network)
+            self.network_doc.set(self.network)
+        else:
+            print('no changes, not writing')
+
+    def add_device(self, device):
+        self.changes = True
+        print('adding device', device)
+        self.network['devices'][device['mac']] = device
+        self.network['device_count'] = len(self.network['devices'])
+
+
 def ssid_is_dirty(ssid):
     return ssid.startswith('unknown_ssid_') or '[NULL]' in ssid or '~unassociated_devices' == ssid
 
-def parse_wifi_map(map_path, ssids):
+
+def parse_wifi_map(map_path, networks):
     with open(map_path, 'r') as f:
         data = f.read()
 
@@ -30,14 +63,11 @@ def parse_wifi_map(map_path, ssids):
             continue
         print('Clean SSID Found = {}'.format(ssid))
         ssid_node = wifi_map[ssid]
-        network_doc_ref = db.collection('networks').document(ssid)
 
-        if ssid not in ssids:
-            if not network_doc_ref.get().exists:
-                network_doc_ref.set({
-                    'ssid': ssid,
-                })
-            ssids |= {ssid}
+        if ssid not in networks:
+            current_network = Network(ssid, db)
+        else:
+            current_network = networks[ssid]
 
         for bssid in ssid_node:
             bssid_node = ssid_node[bssid]
@@ -45,37 +75,35 @@ def parse_wifi_map(map_path, ssids):
                 for device_mac, device in bssid_node['devices'].items():
                     if not device['vendor']:
                         continue
-                    dev_ref = network_doc_ref.collection('devices').document(device_mac)
-                    dev_ref.set({
-                        'mac': device_mac,
-                        'vendor': device['vendor'],
-                        'last_seen': device['last_seen']
-                    })
+                    current_network.add_device(device)
                     devices |= {device_mac}
                     print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
                         device_mac, device['vendor'], time.time() - device['last_seen']))
+
+        current_network.write()
+        networks[ssid] = current_network
 
     print('\n\nSSID count: {}, Device count: {}'.format(
         len(wifi_map), len(devices)))
 
 
 class Event(FileSystemEventHandler):
-    def __init__(self, ssids):
-        self.ssids = ssids
+    def __init__(self, networks):
+        self.networks = networks
 
     def on_modified(self, event):
         if event.src_path.endswith('wifi_map.yaml'):
-            parse_wifi_map('wifi_map.yaml', self.ssids)
+            parse_wifi_map('wifi_map.yaml', self.networks)
 
 
 if __name__ == "__main__":
-    ssids = set()
+    networks_dict = dict()
     cred = credentials.ApplicationDefault()
     firebase_admin.initialize_app(cred, {
         'projectId': 'surveyor-11d22',
     })
     db = firestore.client()
-    event_handler = Event(ssids)
+    event_handler = Event(networks_dict)
     observer = Observer()
     observer.schedule(event_handler, '.', recursive=True)
     observer.start()
