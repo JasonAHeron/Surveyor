@@ -36,10 +36,10 @@ class Network(object):
         else:
             print('no changes, not writing')
 
-    def add_device(self, device):
+    def add_device(self, mac, device):
         self.changes = True
         print('adding device', device)
-        self.network['devices'][device['mac']] = device
+        self.network['devices'][mac] = device
         self.network['device_count'] = len(self.network['devices'])
 
 
@@ -76,7 +76,7 @@ def parse_wifi_map(map_path, networks):
                 for device_mac, device in bssid_node['devices'].items():
                     if not device['vendor']:
                         continue
-                    current_network.add_device(device)
+                    current_network.add_device(device_mac, device)
                     devices |= {device_mac}
                     print('\tdevice = {}, vendor = {}, last_seen = {} seconds ago'.format(
                         device_mac, device['vendor'], time.time() - device['last_seen']))
