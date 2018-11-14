@@ -1,3 +1,4 @@
+from datetime import datetime
 from firebase_admin import credentials
 from firebase_admin import firestore
 from watchdog.events import FileSystemEventHandler
@@ -75,7 +76,8 @@ class Network(object):
                 print('\tDevice: {}, Vendor: {}'.format(mac, device['vendor']))
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
-                        device['activity'][0] // 1, (time.time() - device['last_seen']) // 1))
+                        datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
+                        int((time.time() - device['last_seen']) // 1)))
                 if 'history' in device:
                     print('\t\tHistory: {}'.format(device['history']))
             print()
