@@ -70,8 +70,8 @@ class Network(object):
 
                     # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
-                else:
-                    # if no activity tracking, just drop
+                elif 'history' not in device:
+                    # if no activity tracking or history, just drop
                     remove.append(mac)
 
         for mac in remove:
