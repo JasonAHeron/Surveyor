@@ -85,13 +85,14 @@ def parse_wifi_map(map_path, networks):
         for bssid in ssid_node:
             bssid_node = ssid_node[bssid]
             if 'devices' in bssid_node:
+                now = time.time()
                 for device_mac, device in bssid_node['devices'].items():
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
                     print("Adding activity for ", device)
                     if 'activity' not in device:
-                        device['activity'] = [[time.time()]]
+                        device['activity'] = {now: None}
                         print("Added activity for ", device)
                         # todo: add dropoff
                     current_network.add_device(device)
