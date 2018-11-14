@@ -112,10 +112,8 @@ def parse_wifi_map(map_path, networks):
                     if not device['vendor']:
                         continue
                     device['mac'] = device_mac
-                    if 'activity' not in device:
+                    if 'activity' not in device or device['activity'] is None:
                         device['activity'] = [now, -1]
-                    elif device['last_seen'] > 600:  # 10 mins
-                        # todo: add dropoff
                     current_network.add_device(device)
                     devices |= {device_mac}
 
