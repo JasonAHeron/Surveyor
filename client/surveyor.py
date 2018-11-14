@@ -59,6 +59,7 @@ class Network(object):
         for mac, device in self.network['devices'].items():
             if now - device['last_seen'] > 600:  # 10 mins
                 if 'activity' in device and device['activity'][1] == -1:
+                    self.changes = True
                     device['activity'][1] = now
 
                     # history format is [join, leave, join, leave, ...] janky due to lack of schema options
