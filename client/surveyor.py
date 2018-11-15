@@ -11,6 +11,9 @@ import time
 import yaml
 
 
+reads = 0
+writes = 0
+
 def flatten_dict(d):
     def expand(key, value):
         if isinstance(value, dict):
@@ -31,7 +34,12 @@ class Network(object):
         self.ssid = ssid
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
+
+        self.last_written = time.time()
+        
         self.network = self.network_doc.get()
+        global reads
+        reads += 1
 
         if self.network.exists:
             self.network = self.network.to_dict()
@@ -44,18 +52,29 @@ class Network(object):
             self.network['devices'] = dict()
             self.network['ssid'] = self.ssid
 
+    def contains_live_devices(self):
+        for mac, device in self.network['devices'].items():
+            if 'activity' in device:
+                return True
+        return False
+
     def write(self):
         # don't write when there are no devices
-        if self.changes and len(self.network['devices']) > 0:
+        if (self.changes or time.time() - self.last_written > 300) \
+                and len(self.network['devices']) > 0 and self.contains_live_devices():
             if self.new_network:
                 self.network_doc.set(self.network)
                 self.new_network = False
             else:
                 self.network_doc.update(flatten_dict(self.network))
+            
+            global writes
+            writes += 1
+            self.last_written = time.time()
+
         self.changes = False
 
     def add_device(self, device):
-        # todo: track join and drop timestamps
         if device['mac'] not in self.network['devices']:
             # only write when necessary
             self.changes = True
@@ -87,7 +106,7 @@ class Network(object):
                     device['history'] += device['activity']
                     del (device['activity'])
 
-                    # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
+                    # truncate to 5 join/leave pairs TODO: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
                 elif 'history' not in device:
                     # if no activity tracking or history, just drop
@@ -105,7 +124,7 @@ class Network(object):
                 if 'activity' in device:
                     print('\t\tJoined: {}, Last Seen: {} seconds ago'.format(
                         datetime.utcfromtimestamp(device['activity'][0]).strftime('%Y-%m-%d %H:%M:%S'),
-                        int((time.time() - device['last_seen']) // 1)))
+                        int((time.time() - device['last_seen']))))
                 if 'history' in device:
                     print('\t\tHistory: {}'.format(
                         list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
@@ -147,8 +166,11 @@ def parse_wifi_map(map_path, networks):
                         continue
                     device['mac'] = device_mac
                     if device_mac in current_network.network['devices'] \
-                            and 'activity' not in current_network.network['devices'][device_mac]:
-                        device['activity'] = [min(now, device['last_seen']), -1]
+                            and 'activity' not in current_network.network['devices'][device_mac] \
+                            and now - device['last_seen'] < 600:
+                        # TODO: still buggy I think, using time.time() for the... time... being :(
+                        # device['activity'] = [device['last_seen'], -1]
+                        device['activity'] = [now, -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
 
@@ -159,7 +181,10 @@ def parse_wifi_map(map_path, networks):
 
     print('\n\nSSID count: {}, Device count: {}'.format(
         len(wifi_map), len(devices)))
-
+    
+    global reads, writes
+    print('\nReads: {}, Writes: {}'.format(reads,writes))
+    reads = writes = 0
 
 class Event(FileSystemEventHandler):
     def __init__(self, networks):
