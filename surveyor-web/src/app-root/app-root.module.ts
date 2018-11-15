@@ -13,9 +13,12 @@ import { HomePageComponent } from '../home-page/home-page.component';
 import { AuthorizationModule } from '../authorization/authorization.module';
 import { AuthorizationService } from '../authorization/authorization.service';
 import { NoAccessComponent } from '../authorization/no_access.component';
+import { NetworkDetailsPageComponent } from 'src/network-details-page/network-details-page.component';
+import { NetworkDetailsPageModule } from 'src/network-details-page/network-details-page.module';
 
 const routes: Routes = [
   { path: '', component: HomePageComponent, canActivate: [AuthorizationService] },
+  { path: 'network/:ssid', component: NetworkDetailsPageComponent, canActivate: [AuthorizationService] },
   { path: 'no_access', component: NoAccessComponent },
 ];
 
@@ -26,11 +29,12 @@ const routes: Routes = [
   imports: [
     AngularFireModule.initializeApp(environment.firebase),
     AuthorizationModule,
-    CommonModule,
     BrowserAnimationsModule,
     BrowserModule,
+    CommonModule,
     HomePageModule,
     MatToolbarModule,
+    NetworkDetailsPageModule,
     RouterModule.forRoot(routes),
   ],
   providers: [],

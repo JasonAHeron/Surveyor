@@ -3,6 +3,7 @@ import { AngularFirestore } from 'angularfire2/firestore';
 import { Network } from '../models/network';
 import { Observable } from 'rxjs';
 import { shareReplay, map, tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-home',
@@ -14,13 +15,15 @@ export class HomePageComponent implements OnInit {
 
   constructor(
     private readonly afFirestore: AngularFirestore,
+    private readonly router: Router,
   ) { }
 
   ngOnInit() {
     this.networks = this.afFirestore.collection<Network>('networks')
-      .snapshotChanges().pipe(
-        map(actions => actions.map(a => a.payload.doc.data()).filter(network => Object.values(network.devices).length !== 0)),
-        tap(payload => console.log(payload)),
-        shareReplay(1));
+      .valueChanges().pipe(shareReplay(1));
+  }
+
+  navigateTo(ssid: string) {
+    this.router.navigate(['network', ssid]);
   }
 }

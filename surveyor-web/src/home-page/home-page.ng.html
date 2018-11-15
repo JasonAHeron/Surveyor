@@ -1,7 +1,9 @@
 <mat-progress-bar *ngIf="!(networks | async)"></mat-progress-bar>
 <mat-card *ngFor="let network of networks | async">
   <mat-card-header>
-    <mat-card-title>{{network.ssid}}</mat-card-title>
+    <mat-card-title>
+      <button mat-raised-button (click)="navigateTo(network.ssid)">{{network.ssid}}</button>
+    </mat-card-title>
   </mat-card-header>
   <mat-card-content>
     <app-network-card [ssid]="network.ssid" [devices]="values(network.devices)">
