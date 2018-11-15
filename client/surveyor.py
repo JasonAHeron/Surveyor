@@ -75,7 +75,6 @@ class Network(object):
         self.changes = False
 
     def add_device(self, device):
-        # todo: track join and drop timestamps
         if device['mac'] not in self.network['devices']:
             # only write when necessary
             self.changes = True
@@ -107,7 +106,7 @@ class Network(object):
                     device['history'] += device['activity']
                     del (device['activity'])
 
-                    # truncate to 5 join/leave pairs  todo: probably want this to be a lot more
+                    # truncate to 5 join/leave pairs TODO: probably want this to be a lot more
                     device['history'] = device['history'][-10:]
                 elif 'history' not in device:
                     # if no activity tracking or history, just drop
@@ -169,7 +168,9 @@ def parse_wifi_map(map_path, networks):
                     if device_mac in current_network.network['devices'] \
                             and 'activity' not in current_network.network['devices'][device_mac] \
                             and now - device['last_seen'] < 600:
-                        device['activity'] = [device['last_seen'], -1]
+                        # TODO: still buggy I think, using time.time() for the... time... being :(
+                        # device['activity'] = [device['last_seen'], -1]
+                        device['activity'] = [now, -1]
                     current_network.add_device(device)
                     devices |= {device_mac}
 
@@ -182,7 +183,7 @@ def parse_wifi_map(map_path, networks):
         len(wifi_map), len(devices)))
     
     global reads, writes
-    print('\n\nReads: {}, Writes: {}'.format(reads,writes))
+    print('\nReads: {}, Writes: {}'.format(reads,writes))
     reads = writes = 0
 
 class Event(FileSystemEventHandler):
