@@ -34,8 +34,10 @@ class Network(object):
         self.ssid = ssid
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
+        
         self.network = self.network_doc.get()
-        global reads += 1
+        global reads
+        reads += 1
 
         if self.network.exists:
             self.network = self.network.to_dict()
@@ -57,7 +59,8 @@ class Network(object):
             else:
                 self.network_doc.update(flatten_dict(self.network))
             
-            global writes += 1
+            global writes
+            writes += 1
         self.changes = False
 
     def add_device(self, device):
@@ -166,9 +169,10 @@ def parse_wifi_map(map_path, networks):
 
     print('\n\nSSID count: {}, Device count: {}'.format(
         len(wifi_map), len(devices)))
-    print('\n\nReads: {}, Writes: {}'.format(global reads, global writes)
-    global reads = 0
-    global writes = 0
+    
+    global reads, writes
+    print('\n\nReads: {}, Writes: {}'.format(reads,writes))
+    reads = writes = 0
 
 class Event(FileSystemEventHandler):
     def __init__(self, networks):
