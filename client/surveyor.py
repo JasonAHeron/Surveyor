@@ -76,7 +76,7 @@ class Network(object):
             self.network['devices'][device['mac']]['mac'] = device['mac']
             self.network['devices'][device['mac']]['vendor'] = device['vendor']
             self.network['devices'][device['mac']]['last_seen'] = device['last_seen']
-            if 'activity' not in self.network['devices'][device['mac']]:
+            if 'activity' not in self.network['devices'][device['mac']] and 'activity' in device:
                 self.changes = True
                 self.network['devices'][device['mac']]['activity'] = device['activity']
         else:
