@@ -11,6 +11,9 @@ import time
 import yaml
 
 
+reads = 0
+writes = 0
+
 def flatten_dict(d):
     def expand(key, value):
         if isinstance(value, dict):
@@ -32,6 +35,7 @@ class Network(object):
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
         self.network = self.network_doc.get()
+        global reads += 1
 
         if self.network.exists:
             self.network = self.network.to_dict()
@@ -52,6 +56,8 @@ class Network(object):
                 self.new_network = False
             else:
                 self.network_doc.update(flatten_dict(self.network))
+            
+            global writes += 1
         self.changes = False
 
     def add_device(self, device):
@@ -160,7 +166,9 @@ def parse_wifi_map(map_path, networks):
 
     print('\n\nSSID count: {}, Device count: {}'.format(
         len(wifi_map), len(devices)))
-
+    print('\n\nReads: {}, Writes: {}'.format(global reads, global writes)
+    global reads = 0
+    global writes = 0
 
 class Event(FileSystemEventHandler):
     def __init__(self, networks):
