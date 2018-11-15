@@ -11,13 +11,15 @@ import time
 import yaml
 
 
-class Network(object):
-    MAX_WRITE_WINDOW = 300    # default 5 mins
-    DROPOFF_TIME_LIMIT = 600  # default 10 mins
+MAX_WRITE_WINDOW  =  300  # default 5 mins
+DROPOFF_TIME_LIMIT = 600  # default 10 mins
 
+reads = 0
+writes = 0
+
+class Network(object):
+    
     changes = False
-    reads = 0
-    writes = 0
     new_network = False
 
     def __init__(self, ssid, firestore_connection):
@@ -28,6 +30,7 @@ class Network(object):
         self.last_written = time.time()
         
         self.network = self.network_doc.get()
+        global reads
         reads += 1
 
         if self.network.exists:
@@ -41,11 +44,6 @@ class Network(object):
             self.network['devices'] = dict()
             self.network['ssid'] = self.ssid
 
-    # NOTE: do not run this mode for long periods of time unless you want to get a big bill
-    def engage_demo_mode():
-        Network.MAX_WRITE_WINDOW = 15    # seconds
-        Network.DROPOFF_TIME_LIMIT = 30  # seconds
-
     def contains_live_devices(self):
         for mac, device in self.network['devices'].items():
             if 'activity' in device:
@@ -54,6 +52,7 @@ class Network(object):
 
     def write(self):
         # don't write when there are no devices
+        global MAX_WRITE_WINDOW
         if (self.changes or time.time() - self.last_written > MAX_WRITE_WINDOW) \
                 and len(self.network['devices']) > 0 and self.contains_live_devices():
             if self.new_network:
@@ -62,6 +61,7 @@ class Network(object):
             else:
                 self.network_doc.update(flatten_dict(self.network))
             
+            global writes
             writes += 1
             self.last_written = time.time()
 
@@ -87,6 +87,7 @@ class Network(object):
     def track_devices(self):
         now = time.time()
         remove = []
+        global DROPOFF_TIME_LIMIT
         for mac, device in self.network['devices'].items():
             if now - device['last_seen'] > DROPOFF_TIME_LIMIT:
                 if 'activity' in device and device['activity'][1] == -1:
@@ -123,68 +124,70 @@ class Network(object):
                         list(map(lambda ts: datetime.utcfromtimestamp(ts).strftime('%m-%d %H:%M'), device['history']))))
             print()
 
-    def ssid_is_dirty(ssid):
-        return ssid.startswith('unknown_ssid_') or '[NULL]' in ssid or '~unassociated_devices' == ssid
+def ssid_is_dirty(ssid):
+    return ssid.startswith('unknown_ssid_') or '[NULL]' in ssid or '~unassociated_devices' == ssid
 
-    def flatten_dict(d):
-        def expand(key, value):
-            if isinstance(value, dict):
-                return [(key + '.' + k, v) for k, v in flatten_dict(value).items()]
-            else:
-                return [(key, value)]
+def flatten_dict(d):
+    def expand(key, value):
+        if isinstance(value, dict):
+            return [(key + '.' + k, v) for k, v in flatten_dict(value).items()]
+        else:
+            return [(key, value)]
 
-        items = [item for k, v in d.items() for item in expand(k, v)]
-        return dict(items)
+    items = [item for k, v in d.items() for item in expand(k, v)]
+    return dict(items)
 
-    def parse_wifi_map(map_path, networks):
-        with open(map_path, 'r') as f:
-            data = f.read()
+def parse_wifi_map(map_path, networks):
+    with open(map_path, 'r') as f:
+        data = f.read()
 
-        wifi_map = yaml.load(data)
-        devices = set()
+    wifi_map = yaml.load(data)
+    devices = set()
 
-        if not wifi_map:
-            return
+    if not wifi_map:
+        return
 
-        os.system('clear')
-        for ssid in wifi_map:
-            if ssid_is_dirty(ssid):
-                continue
+    os.system('clear')
+    global DROPOFF_TIME_LIMIT
+    for ssid in wifi_map:
+        if ssid_is_dirty(ssid):
+            continue
 
-            ssid_node = wifi_map[ssid]
+        ssid_node = wifi_map[ssid]
 
-            if ssid not in networks:
-                current_network = Network(ssid, db)
-            else:
-                current_network = networks[ssid]
+        if ssid not in networks:
+            current_network = Network(ssid, db)
+        else:
+            current_network = networks[ssid]
 
-            for bssid in ssid_node:
-                bssid_node = ssid_node[bssid]
-                if 'devices' in bssid_node:
-                    now = time.time()
-                    for device_mac, device in bssid_node['devices'].items():
-                        if not device['vendor']:
-                            continue
-                        device['mac'] = device_mac
-                        if device_mac in current_network.network['devices'] \
-                                and 'activity' not in current_network.network['devices'][device_mac] \
-                                and now - device['last_seen'] < DROPOFF_TIME_LIMIT:
-                            # TODO: still buggy I think, using time.time() for the... time... being :(
-                            # device['activity'] = [device['last_seen'], -1]
-                            device['activity'] = [now, -1]
-                        current_network.add_device(device)
-                        devices |= {device_mac}
+        for bssid in ssid_node:
+            bssid_node = ssid_node[bssid]
+            if 'devices' in bssid_node:
+                now = time.time()
+                for device_mac, device in bssid_node['devices'].items():
+                    if not device['vendor']:
+                        continue
+                    device['mac'] = device_mac
+                    if device_mac in current_network.network['devices'] \
+                            and 'activity' not in current_network.network['devices'][device_mac] \
+                            and now - device['last_seen'] < DROPOFF_TIME_LIMIT:
+                        # TODO: still buggy I think, using time.time() for the... time... being :(
+                        # device['activity'] = [device['last_seen'], -1]
+                        device['activity'] = [now, -1]
+                    current_network.add_device(device)
+                    devices |= {device_mac}
 
-            current_network.track_devices()
-            current_network.print_network()
-            current_network.write()
-            networks[ssid] = current_network
+        current_network.track_devices()
+        current_network.print_network()
+        current_network.write()
+        networks[ssid] = current_network
 
-        print('\n\nSSID count: {}, Device count: {}'.format(
-            len(wifi_map), len(devices)))
-        
-        print('\nReads: {}, Writes: {}'.format(reads,writes))
-        reads = writes = 0
+    print('\n\nSSID count: {}, Device count: {}'.format(
+        len(wifi_map), len(devices)))
+    
+    global reads, writes
+    print('\nReads: {}, Writes: {}'.format(reads,writes))
+    reads = writes = 0
 
 
 class Event(FileSystemEventHandler):
@@ -193,12 +196,19 @@ class Event(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path.endswith('wifi_map.yaml'):
-            Network.parse_wifi_map('wifi_map.yaml', self.networks)
+            parse_wifi_map('wifi_map.yaml', self.networks)
+
+
+# NOTE: do not run this mode for long periods of time unless you want to get a big bill
+def engage_demo_mode():
+    global MAX_WRITE_WINDOW, DROPOFF_TIME_LIMIT
+    MAX_WRITE_WINDOW = 15    # seconds
+    DROPOFF_TIME_LIMIT = 30  # seconds
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == '--demo':
-        Network.engage_demo_mode()
+        engage_demo_mode()
         print('DEMO MODE ENGAGED, data usage will be excessive, you have been warned!')
 
     networks_dict = dict()
