@@ -98,7 +98,7 @@ class Network(object):
             if now - device['last_seen'] > 600:  # 10 mins
                 if 'activity' in device and device['activity'][1] == -1:
                     self.changes = True
-                    device['activity'][1] = now
+                    device['activity'][1] = device['last_seen']
 
                     # history format is [join, leave, join, leave, ...] janky due to lack of schema options
                     if 'history' not in device:
@@ -106,8 +106,8 @@ class Network(object):
                     device['history'] += device['activity']
                     del (device['activity'])
 
-                    # truncate to 5 join/leave pairs TODO: probably want this to be a lot more
-                    device['history'] = device['history'][-10:]
+                    # truncate to 10 join/leave pairs, probably want this to be a lot more
+                    device['history'] = device['history'][-20:]
                 elif 'history' not in device:
                     # if no activity tracking or history, just drop
                     remove.append(mac)
