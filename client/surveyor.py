@@ -52,7 +52,7 @@ class Network(object):
 
     def write(self):
         # don't write when there are no devices
-        global MAX_WRITE_WINDOW
+        global MAX_WRITE_WINDOW, writes
         if (self.changes or time.time() - self.last_written > MAX_WRITE_WINDOW) \
                 and len(self.network['devices']) > 0 and self.contains_live_devices():
             if self.new_network:
@@ -61,7 +61,6 @@ class Network(object):
             else:
                 self.network_doc.update(flatten_dict(self.network))
             
-            global writes
             writes += 1
             self.last_written = time.time()
 
@@ -79,6 +78,9 @@ class Network(object):
             if 'activity' not in self.network['devices'][device['mac']] and 'activity' in device:
                 self.changes = True
                 self.network['devices'][device['mac']]['activity'] = device['activity']
+            if 'starred' not in self.network['devices'][device['mac']]:
+                self.changes = True
+                self.network['devices'][device['mac']]['starred'] = device['starred']
         else:
             self.network['devices'][device['mac']] = device
 
@@ -174,6 +176,9 @@ def parse_wifi_map(map_path, networks):
                         # TODO: still buggy I think, using time.time() for the... time... being :(
                         # device['activity'] = [device['last_seen'], -1]
                         device['activity'] = [now, -1]
+
+                    # this will only write if the device is new or does not yet have a starred property
+                    device['starred'] = False
                     current_network.add_device(device)
                     devices |= {device_mac}
 
