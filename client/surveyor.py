@@ -34,6 +34,8 @@ class Network(object):
         self.ssid = ssid
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
+
+        self.last_written = time.time()
         
         self.network = self.network_doc.get()
         global reads
@@ -50,9 +52,16 @@ class Network(object):
             self.network['devices'] = dict()
             self.network['ssid'] = self.ssid
 
+    def contains_live_devices(self):
+        for mac, device in self.network['devices'].items():
+            if 'activity' in device:
+                return True
+        return False
+
     def write(self):
         # don't write when there are no devices
-        if self.changes and len(self.network['devices']) > 0:
+        if (self.changes or time.time() - self.last_written > 300) \
+                and len(self.network['devices']) > 0 and self.contains_live_devices():
             if self.new_network:
                 self.network_doc.set(self.network)
                 self.new_network = False
@@ -61,6 +70,8 @@ class Network(object):
             
             global writes
             writes += 1
+            self.last_written = time.time()
+
         self.changes = False
 
     def add_device(self, device):
