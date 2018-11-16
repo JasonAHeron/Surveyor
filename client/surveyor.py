@@ -83,6 +83,18 @@ class Network(object):
 
         self.network['device_count'] = len(self.network['devices'])
 
+    def refine_history(self, history):
+        global DROPOFF_TIME_LIMIT
+        changing = True
+        while changing:
+            changing = False
+            for i in range(len(history), 4):
+                if i + 3 < len(history) and history[i+2] - history[i+1] <= DROPOFF_TIME_LIMIT:
+                    history = history[:i + 1] + history[i + 3:]
+                    changing = True
+                    break
+        return history
+
     def track_devices(self):
         now = time.time()
         remove = []
@@ -102,7 +114,7 @@ class Network(object):
                     del (device['activity'])
 
                     # truncate to 10 join/leave pairs, probably want this to be a lot more
-                    device['history'] = device['history'][-20:]
+                    device['history'] = refine_history(device['history'])[-20:]
                 elif 'history' not in device:
                     # if no activity tracking or history, just drop
                     remove.append(mac)
