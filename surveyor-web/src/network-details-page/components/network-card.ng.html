@@ -1,0 +1,57 @@
+<mat-table [dataSource]="devices"
+           class="mat-elevation-z8">
+  <!-- Name Column -->
+  <ng-container matColumnDef="name">
+    <mat-header-cell mat-header-cell
+                     *matHeaderCellDef> Name </mat-header-cell>
+    <mat-cell *matCellDef="let device">
+      <mat-form-field>
+        <input matInput
+               type="text"
+               [(ngModel)]="device.name"
+               placeholder="Device Nickname">
+        <mat-icon matSuffix
+                  (click)="update(device)">check</mat-icon>
+      </mat-form-field>
+    </mat-cell>
+  </ng-container>
+
+  <!-- Currently Active Column -->
+  <ng-container matColumnDef="currentlyActive">
+    <mat-header-cell mat-header-cell
+                     *matHeaderCellDef> Active Now </mat-header-cell>
+    <mat-cell *matCellDef="let device"> {{device.activity?.length > 0 ? "yes" : "no"}} </mat-cell>
+  </ng-container>
+
+  <!-- Last Seen Column -->
+  <ng-container matColumnDef="lastSeen">
+    <mat-header-cell mat-header-cell
+                     *matHeaderCellDef> Last Seen </mat-header-cell>
+    <mat-cell *matCellDef="let device"> {{device.last_seen | lastSeen}} </mat-cell>
+  </ng-container>
+
+  <!-- Mac Column -->
+  <ng-container matColumnDef="mac">
+    <mat-header-cell *matHeaderCellDef> MAC Addr. </mat-header-cell>
+    <mat-cell *matCellDef="let device"> {{device.mac}} </mat-cell>
+  </ng-container>
+
+  <!-- Vendor Column -->
+  <ng-container matColumnDef="vendor">
+    <mat-header-cell mat-header-cell
+                     *matHeaderCellDef> Vendor </mat-header-cell>
+    <mat-cell *matCellDef="let device"> {{device.vendor}} </mat-cell>
+  </ng-container>
+
+  <!-- Delete Column -->
+  <ng-container matColumnDef="delete">
+    <mat-header-cell mat-header-cell
+                     *matHeaderCellDef> Delete </mat-header-cell>
+    <mat-cell *matCellDef="let device">
+      <mat-icon (click)="delete(device)">delete</mat-icon>
+    </mat-cell>
+  </ng-container>
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+</mat-table>

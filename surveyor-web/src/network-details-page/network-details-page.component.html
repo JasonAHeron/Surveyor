@@ -1,12 +1,16 @@
-<button mat-raised-button (click)="navigateBack()">Back to networks</button>
+<button mat-raised-button
+        (click)="navigateBack()">Back to networks</button>
 <h1> Network details for {{ ssid | async }}</h1>
 <div class="graph-container">
-  <ngx-charts-line-chart [results]="activityGraph" [xAxis]="true" [yAxis]="true" [legend]="true" [curve]="shape" [yAxisTicks]="[0,1]">
+  <ngx-charts-line-chart [results]="activityGraph"
+                         [xAxis]="true"
+                         [yAxis]="true"
+                         [legend]="true"
+                         [curve]="shape"
+                         [yAxisTicks]="[0,1]">
   </ngx-charts-line-chart>
 </div>
-<mat-card>
-  <mat-card-content>
-    <app-network-card *ngIf="network | async" [ssid]="(network | async).ssid" [devices]="values((network | async).devices)">
-    </app-network-card>
-  </mat-card-content>
-</mat-card>
+<app-network-card *ngIf="network | async"
+                  [ssid]="(network | async).ssid"
+                  [devices]="values((network | async).devices)">
+</app-network-card>
