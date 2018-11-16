@@ -34,7 +34,7 @@ class ActivityRange {
   styleUrls: ['./network-details-page.component.css']
 })
 export class NetworkDetailsPageComponent implements OnInit {
-  ssid: Observable<string>
+  ssid: string;
   network: Observable<Network>
   activityGraph: { name: string, series: number[] }[] = []
   activityGraphBackup: { name: string, series: number[] }[] = []
@@ -49,14 +49,15 @@ export class NetworkDetailsPageComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.ssid = this.route.paramMap.pipe(map(paramMap => paramMap['params']['ssid']), shareReplay(1));
-    this.network = this.ssid.pipe(
+    this.network = this.route.paramMap.pipe(
+      map(paramMap => paramMap['params']['ssid']),
+      tap(ssid => this.ssid = ssid),
       switchMap(ssid => this.aFirestore.collection<Network>('networks').doc(ssid).valueChanges()),
       map(network => network as Network),
       tap(network => {
         this.activityGraph = [];
         for (let device of Object.values(network.devices)) {
-          if (device.history) {
+          if (device.history && device.starred) {
             const deviceGraph = { 'name': device.name ? device.name : device.mac, 'series': [] };
             const deviceActivityRange = new ActivityRange(device.history, device.activity);
             for (let time = 0; time < 144; time++) {
@@ -76,6 +77,10 @@ export class NetworkDetailsPageComponent implements OnInit {
     );
   }
 
+  resetBlacklist() {
+    this.aFirestore.doc(`blacklisted_devices/${this.ssid}`).delete();
+  }
+
   navigateBack() {
     this.router.navigate(['/']);
   }
@@ -90,7 +95,7 @@ export class NetworkDetailsPageComponent implements OnInit {
   //    }
   //    else if(this.activityGraphBackup !== []){
   //      this.activityGraph = this.activityGraphBackup;
-    
+
   //    }
   // }
 

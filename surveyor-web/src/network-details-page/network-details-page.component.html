@@ -1,7 +1,9 @@
 <button mat-raised-button
         (click)="navigateBack()">Back to networks</button>
-<h1> Network details for {{ ssid | async }}</h1>
-<div class="graph-container">
+<button mat-raised-button
+        (click)="resetBlacklist()">Reset Blacklist</button>
+<h1> Network details for {{ ssid }}</h1>
+<div class="graph-container" *ngIf="activityGraph.length">
   <ngx-charts-line-chart [results]="activityGraph"
                          [xAxis]="true"
                          [yAxis]="true"

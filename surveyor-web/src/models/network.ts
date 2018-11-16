@@ -12,4 +12,5 @@ export interface Device {
   history? : number[];
   last_seen: Number;
   name?: string;
+  starred?: boolean;
 }
