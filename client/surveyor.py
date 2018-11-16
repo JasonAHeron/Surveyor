@@ -55,12 +55,12 @@ class Network(object):
     def filter_blacklist(self):
         if self.blacklist is not None and self.blacklist.exists:
             blacklisted = []
-            for mac in self.network.devices:
+            for mac in self.network['devices']:
                 if mac in self.blacklist:
                     blacklisted.append(mac)
 
             for mac in blacklisted:
-                del(self.network.devices[mac])
+                del(self.network['devices'][mac])
 
     def write(self):
         global MAX_WRITE_WINDOW, writes
@@ -81,6 +81,8 @@ class Network(object):
         self.changes = False
 
     def add_device(self, device):
+        if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist:
+            return
         if device['mac'] not in self.network['devices']:
             # only write when necessary
             self.changes = True
@@ -114,6 +116,9 @@ class Network(object):
         remove = []
         global DROPOFF_TIME_LIMIT
         for mac, device in self.network['devices'].items():
+            if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist:
+                continue
+
             if now - device['last_seen'] > DROPOFF_TIME_LIMIT:
                 if 'activity' in device and device['activity'][1] == -1:
                     self.changes = True
