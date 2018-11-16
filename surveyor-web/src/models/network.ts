@@ -6,6 +6,10 @@ export interface Network {
 export interface Device {
   mac: string;
   vendor: string;
+  activity?: number[];
+  bytes: number;
+  signal: number;
+  history? : number[];
   last_seen: Number;
   name?: string;
 }

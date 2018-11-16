@@ -10,8 +10,8 @@ import { Router } from '@angular/router';
   templateUrl: './home-page.ng.html',
 })
 export class HomePageComponent implements OnInit {
-  networks: Observable<Network[]> | undefined;
-  values = Object.values;
+  networks: Observable<{ ssid: string, activeDeviceCount: number }[]> | undefined;
+  displayedColumns = ['ssid', 'activeDeviceCount'];
 
   constructor(
     private readonly afFirestore: AngularFirestore,
@@ -20,7 +20,14 @@ export class HomePageComponent implements OnInit {
 
   ngOnInit() {
     this.networks = this.afFirestore.collection<Network>('networks')
-      .valueChanges().pipe(shareReplay(1));
+      .valueChanges().pipe(
+        map(networks => networks.map(network => {
+          return {
+            'ssid': network.ssid,
+            'activeDeviceCount': Object.values(network.devices).filter(device => device.activity).length,
+          }
+        }).sort()),
+        shareReplay(1));
   }
 
   navigateTo(ssid: string) {
