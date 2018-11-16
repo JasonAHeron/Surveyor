@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { AngularFirestore } from 'angularfire2/firestore';
 import { Device, Network } from '../../models/network';
+import { DeviceDetectorService } from 'ngx-device-detector';
 
 @Component({
   selector: 'app-network-card',
@@ -15,7 +16,14 @@ export class NetworkCardComponent {
 
   constructor(
     private readonly afFirestore: AngularFirestore,
+    private readonly deviceDetector: DeviceDetectorService,
   ) { }
+
+  ngOnInit(){
+    if(this.deviceDetector.isMobile() || this.deviceDetector.isMobile()){
+      this.displayedColumns = ['starred', 'name', 'lastSeen', 'mac', 'actions'];
+    }
+  }
 
   update(device: Device) {
     const devicesPartial: { [key: string]: Partial<Device> } = { ['devices.' + device.mac]: device }

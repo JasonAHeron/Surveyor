@@ -15,6 +15,7 @@ import { AuthorizationService } from '../authorization/authorization.service';
 import { NoAccessComponent } from '../authorization/no_access.component';
 import { NetworkDetailsPageComponent } from 'src/network-details-page/network-details-page.component';
 import { NetworkDetailsPageModule } from 'src/network-details-page/network-details-page.module';
+import { DeviceDetectorModule } from 'ngx-device-detector';
 
 const routes: Routes = [
   { path: '', component: HomePageComponent, canActivate: [AuthorizationService] },
@@ -36,6 +37,7 @@ const routes: Routes = [
     MatToolbarModule,
     NetworkDetailsPageModule,
     RouterModule.forRoot(routes),
+    DeviceDetectorModule.forRoot(),
   ],
   providers: [],
   bootstrap: [AppRootComponent]

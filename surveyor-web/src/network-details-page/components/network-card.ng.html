@@ -22,11 +22,11 @@
         *matHeaderCellDef> Name </th>
     <td mat-cell
         *matCellDef="let device">
-      <mat-form-field>
+      <mat-form-field class="name-form-field">
         <input matInput
                type="text"
                [(ngModel)]="device.name"
-               placeholder="Device Nickname">
+               placeholder="Nickname">
         <mat-icon matSuffix
                   (click)="update(device)">check</mat-icon>
       </mat-form-field>
