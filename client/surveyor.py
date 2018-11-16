@@ -120,6 +120,9 @@ class Network(object):
             if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist.to_dict():
                 continue
 
+            if 'starred' in device:
+                del(device['starred'])
+
             if now - device['last_seen'] > DROPOFF_TIME_LIMIT:
                 if 'activity' in device and device['activity'][1] == -1:
                     self.changes = True
