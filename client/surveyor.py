@@ -106,7 +106,7 @@ class Network(object):
         while changing:
             changing = False
             for i in range(0, len(history), 2):
-                if i + 3 < len(history) and (history[i+2] - history[i+1] <= DROPOFF_TIME_LIMIT or history[i+2] - 60 <= history[i+1]):
+                if i + 3 < len(history) and (history[i+2] - history[i+1] <= DROPOFF_TIME_LIMIT / 2.5  or history[i+2] - 60 <= history[i+1]):
                     history = history[:i + 1] + history[i + 3:]
                     changing = True
                     break
