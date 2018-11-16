@@ -114,7 +114,7 @@ class Network(object):
                     del (device['activity'])
 
                     # truncate to 10 join/leave pairs, probably want this to be a lot more
-                    device['history'] = refine_history(device['history'])[-20:]
+                    device['history'] = self.refine_history(device['history'])[-20:]
                 elif 'history' not in device:
                     # if no activity tracking or history, just drop
                     remove.append(mac)
