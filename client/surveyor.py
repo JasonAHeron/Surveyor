@@ -26,10 +26,12 @@ class Network(object):
         self.ssid = ssid
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
+        self.blacklist_doc = firestore_connection.collection('blacklisted_devices').document(ssid)
 
         self.last_written = time.time()
         
         self.network = self.network_doc.get()
+        self.blacklist = None
         global reads
         reads += 1
 
@@ -50,6 +52,16 @@ class Network(object):
                 return True
         return False
 
+    def filter_blacklist(self):
+        if self.blacklist is not None and self.blacklist.exists:
+            blacklisted = []
+            for mac in self.network.devices:
+                if mac in self.blacklist:
+                    blacklisted.append(mac)
+
+            for mac in blacklisted:
+                del(self.network.devices[mac])
+
     def write(self):
         global MAX_WRITE_WINDOW, writes
         # don't write when there are no devices
@@ -59,6 +71,8 @@ class Network(object):
                 self.network_doc.set(self.network)
                 self.new_network = False
             else:
+                self.blacklist = self.blacklist_doc.get()
+                self.filter_blacklist()
                 self.network_doc.update(flatten_dict(self.network))
             
             writes += 1
