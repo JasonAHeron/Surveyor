@@ -54,9 +54,10 @@ class Network(object):
 
     def filter_blacklist(self):
         if self.blacklist is not None and self.blacklist.exists:
+            bl = self.blacklist.to_dict()
             blacklisted = []
             for mac in self.network['devices']:
-                if mac in self.blacklist:
+                if mac in bl:
                     blacklisted.append(mac)
 
             for mac in blacklisted:
@@ -81,7 +82,7 @@ class Network(object):
         self.changes = False
 
     def add_device(self, device):
-        if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist:
+        if self.blacklist is not None and self.blacklist.exists and device['mac'] in self.blacklist.to_dict():
             return
         if device['mac'] not in self.network['devices']:
             # only write when necessary
@@ -116,7 +117,7 @@ class Network(object):
         remove = []
         global DROPOFF_TIME_LIMIT
         for mac, device in self.network['devices'].items():
-            if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist:
+            if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist.to_dict():
                 continue
 
             if now - device['last_seen'] > DROPOFF_TIME_LIMIT:
