@@ -26,10 +26,12 @@ class Network(object):
         self.ssid = ssid
         self.firestore_connection = firestore_connection
         self.network_doc = firestore_connection.collection('networks').document(ssid)
+        self.blacklist_doc = firestore_connection.collection('blacklisted_devices').document(ssid)
 
         self.last_written = time.time()
         
         self.network = self.network_doc.get()
+        self.blacklist = None
         global reads
         reads += 1
 
@@ -50,6 +52,17 @@ class Network(object):
                 return True
         return False
 
+    def filter_blacklist(self):
+        if self.blacklist is not None and self.blacklist.exists:
+            bl = self.blacklist.to_dict()
+            blacklisted = []
+            for mac in self.network['devices']:
+                if mac in bl:
+                    blacklisted.append(mac)
+
+            for mac in blacklisted:
+                del(self.network['devices'][mac])
+
     def write(self):
         global MAX_WRITE_WINDOW, writes
         # don't write when there are no devices
@@ -59,6 +72,8 @@ class Network(object):
                 self.network_doc.set(self.network)
                 self.new_network = False
             else:
+                self.blacklist = self.blacklist_doc.get()
+                self.filter_blacklist()
                 self.network_doc.update(flatten_dict(self.network))
             
             writes += 1
@@ -67,6 +82,8 @@ class Network(object):
         self.changes = False
 
     def add_device(self, device):
+        if self.blacklist is not None and self.blacklist.exists and device['mac'] in self.blacklist.to_dict():
+            return
         if device['mac'] not in self.network['devices']:
             # only write when necessary
             self.changes = True
@@ -100,6 +117,12 @@ class Network(object):
         remove = []
         global DROPOFF_TIME_LIMIT
         for mac, device in self.network['devices'].items():
+            if self.blacklist is not None and self.blacklist.exists and mac in self.blacklist.to_dict():
+                continue
+
+            if 'starred' in device:
+                del(device['starred'])
+
             if now - device['last_seen'] > DROPOFF_TIME_LIMIT:
                 if 'activity' in device and device['activity'][1] == -1:
                     self.changes = True
